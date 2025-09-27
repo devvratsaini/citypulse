@@ -1,6 +1,7 @@
 "use client"; // This component requires client-side interactivity (state)
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { FaUserCircle, FaEnvelope, FaLock } from "react-icons/fa"; // Using icons for flair
 
 // A helper component for a styled form input
@@ -32,15 +33,51 @@ const FormInput = ({
 
 // The Sign-In Form Component
 const SignInForm = () => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle form submission here
-    console.log("Signing in...");
-    alert("Frontend-only: Sign-in form submitted!");
+    setIsLoading(true);
+    setError('');
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+
+    try {
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        router.push('/dashboard');
+      } else {
+        setError(data.message || 'Sign in failed');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
       <FormInput
         id="email"
         type="email"
@@ -60,9 +97,10 @@ const SignInForm = () => {
       </div>
       <button
         type="submit"
-        className="w-full py-3 px-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors"
+        disabled={isLoading}
+        className="w-full py-3 px-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Sign In
+        {isLoading ? 'Signing In...' : 'Sign In'}
       </button>
     </form>
   );
@@ -70,15 +108,71 @@ const SignInForm = () => {
 
 // The Sign-Up Form Component
 const SignUpForm = () => {
-  const handleSubmit = (e: React.FormEvent) => {
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you'd handle form submission here
-    console.log("Signing up...");
-    alert("Frontend-only: Sign-up form submitted!");
+    setIsLoading(true);
+    setError('');
+
+    const formData = new FormData(e.target as HTMLFormElement);
+    const fullName = formData.get('fullName') as string;
+    const email = formData.get('email') as string;
+    const password = formData.get('password') as string;
+    const confirmPassword = formData.get('confirmPassword') as string;
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ fullName, email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Auto sign in after successful registration
+        const signInResponse = await fetch('/api/auth/signin', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const signInData = await signInResponse.json();
+        if (signInResponse.ok) {
+          localStorage.setItem('token', signInData.token);
+          localStorage.setItem('user', JSON.stringify(signInData.user));
+          router.push('/dashboard');
+        }
+      } else {
+        setError(data.message || 'Registration failed');
+      }
+    } catch (error) {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
       <FormInput
         id="fullName"
         type="text"
@@ -105,9 +199,10 @@ const SignUpForm = () => {
       />
       <button
         type="submit"
-        className="w-full py-3 px-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors"
+        disabled={isLoading}
+        className="w-full py-3 px-4 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        Create Account
+        {isLoading ? 'Creating Account...' : 'Create Account'}
       </button>
     </form>
   );

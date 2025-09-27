@@ -1,0 +1,35 @@
+# Gitleaks configuration for CityPulse
+title = "CityPulse Secret Detection"
+
+[extend]
+use-default = true
+
+[allowlist]
+description = "Allowlist for CityPulse"
+regexes = [
+  # Allow example/test values
+  'mongodb://localhost:27017/citypulse',
+  'mongodb://admin:password123@mongodb:27017/citypulse',
+  'your-super-secret-jwt-key-here',
+  'your-openroute-service-api-key-here',
+  'http://localhost:3000',
+  'admin123',
+  'password123',
+]
+
+[rules]
+# Custom rules for CityPulse
+[[rules]]
+description = "CityPulse JWT Secret"
+regex = '''jwt[_-]?secret['"]?\s*[:=]\s*['"]?[a-zA-Z0-9]{32,}['"]?'''
+tags = ["jwt", "secret"]
+
+[[rules]]
+description = "CityPulse API Keys"
+regex = '''(?:api[_-]?key|apikey)['"]?\s*[:=]\s*['"]?[a-zA-Z0-9]{20,}['"]?'''
+tags = ["api", "key"]
+
+[[rules]]
+description = "MongoDB Connection String"
+regex = '''mongodb[+]?://[^:]+:[^@]+@[^/]+/[^?]+'''
+tags = ["database", "mongodb"]

@@ -5,8 +5,8 @@ FROM node:18-alpine AS deps
 WORKDIR /app
 # Copy only the package files to leverage Docker's layer caching
 COPY package.json package-lock.json ./
-# Install production dependencies
-RUN npm install --omit=dev
+# Install production dependencies with security audit
+RUN npm install --omit=dev && npm audit --audit-level=moderate
 
 # ---- Stage 2: Application Build ----
 FROM node:18-alpine AS builder
@@ -28,18 +28,35 @@ RUN npm run build
 # This is the final, lean image that will be deployed
 FROM node:18-alpine AS runner
 WORKDIR /app
+
 # Set the environment to production to enable Next.js optimizations
 ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Create non-root user for security
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
 
 # Copy the optimized, standalone output from the builder stage
 # This creates a much smaller final image than copying the entire project
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Create necessary directories and set permissions
+RUN mkdir -p .next/cache && chown -R nextjs:nodejs .next
+
+# Switch to non-root user
+USER nextjs
 
 # The application will run on port 3000 inside the container
 EXPOSE 3000
 ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+# Health check for container orchestration
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # The command to start the optimized Next.js server
 CMD ["node", "server.js"]

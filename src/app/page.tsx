@@ -1,7 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import { VscRocket } from "react-icons/vsc"; // Using a simple icon
+import { useState } from "react";
+import Chatbot from '@/components/Chatbot';
 
 export default function LandingPage() {
+  const [isChatbotOpen, setIsChatbotOpen] = useState(false);
+  
+  console.log('Landing page chatbot state:', isChatbotOpen);
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white p-4">
       {/* Main Content Container */}
@@ -14,9 +22,8 @@ export default function LandingPage() {
 
         {/* Headline */}
         <h1 className="text-4xl md:text-6xl font-extrabold tracking-tight">
-          Project{" "}
           <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-teal-300">
-            Lifeline
+            CityPulse
           </span>
         </h1>
 
@@ -47,6 +54,12 @@ export default function LandingPage() {
       <footer className="absolute bottom-4 text-gray-500 text-sm">
         A 4-Hour Hackathon Project.
       </footer>
+
+      {/* Chatbot */}
+      <Chatbot 
+        isOpen={isChatbotOpen} 
+        onToggle={() => setIsChatbotOpen(!isChatbotOpen)} 
+      />
     </main>
   );
 }

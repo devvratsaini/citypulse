@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
+import { recordUserAction } from '@/lib/metrics';
 
 export async function POST(request: Request) {
   await dbConnect();
@@ -30,11 +31,17 @@ export async function POST(request: Request) {
 
     await newUser.save();
 
+    // Record successful registration
+    recordUserAction('registration', 'success');
+
     return NextResponse.json(
       { message: 'User registered successfully!' },
       { status: 201 } // 201 Created
     );
   } catch (error: any) {
+    // Record failed registration
+    recordUserAction('registration', 'failure');
+    
     return NextResponse.json(
       { message: 'An error occurred.', error: error.message },
       { status: 500 } // 500 Internal Server Error

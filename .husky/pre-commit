@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run linting
+echo "Running ESLint..."
+npm run lint
+
+# Run security audit
+echo "Running security audit..."
+npm audit --audit-level=moderate
+
+# Check for secrets with gitleaks
+echo "Checking for secrets..."
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --source . --verbose
+else
+  echo "Warning: gitleaks not installed. Install it to check for secrets."
+fi
+
+# Type check
+echo "Running TypeScript check..."
+npx tsc --noEmit
+
+echo "Pre-commit checks passed! ✅"
