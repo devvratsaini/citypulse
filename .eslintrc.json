@@ -1,0 +1,6 @@
+{
+  "extends": [
+    "next/core-web-vitals",
+    "plugin:security/recommended" // <--- ADD THIS LINE
+  ]
+}
