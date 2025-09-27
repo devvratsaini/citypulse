@@ -250,6 +250,3 @@ export default function SigninPage() {
     </main>
   );
 }
-
-// Don't forget to install react-icons if you haven't!
-// npm install react-icons
